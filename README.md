@@ -11,7 +11,7 @@ A WinDirStat-style disk-usage explorer for the terminal, built with [Bubble Tea]
 ## Install
 
 ```sh
-go install github.com/wgosse/det@latest
+go install github.com/wgosse64/det@latest
 ```
 
 Or from a local clone:

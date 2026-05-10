@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/wgosse/det/internal/fmtsize"
-	"github.com/wgosse/det/internal/scan"
+	"github.com/wgosse64/det/internal/fmtsize"
+	"github.com/wgosse64/det/internal/scan"
 )
 
 const (

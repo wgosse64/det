@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wgosse/det/internal/scan"
+	"github.com/wgosse64/det/internal/scan"
 )
 
 // modelFor builds a fully-populated Model around an in-memory tree, avoiding

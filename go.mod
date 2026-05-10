@@ -1,4 +1,4 @@
-module github.com/wgosse/det
+module github.com/wgosse64/det
 
 go 1.26.1
 

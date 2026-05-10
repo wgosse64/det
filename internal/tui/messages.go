@@ -3,7 +3,7 @@ package tui
 import (
 	"time"
 
-	"github.com/wgosse/det/internal/scan"
+	"github.com/wgosse64/det/internal/scan"
 )
 
 // scanProgressMsg is delivered each time the scanner pushes a progress tick.

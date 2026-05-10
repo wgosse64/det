@@ -8,7 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wgosse/det/internal/tui"
+	"github.com/wgosse64/det/internal/tui"
 )
 
 func main() {

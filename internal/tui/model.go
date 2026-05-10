@@ -11,8 +11,8 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/wgosse/det/internal/action"
-	"github.com/wgosse/det/internal/scan"
+	"github.com/wgosse64/det/internal/action"
+	"github.com/wgosse64/det/internal/scan"
 )
 
 type confirmState struct {

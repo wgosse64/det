@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/wgosse/det/internal/fmtsize"
+	"github.com/wgosse64/det/internal/fmtsize"
 )
 
 // blocksView renders the children of m.current as a row-major grid of colored

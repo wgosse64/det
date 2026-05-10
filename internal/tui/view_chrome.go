@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/wgosse/det/internal/fmtsize"
+	"github.com/wgosse64/det/internal/fmtsize"
 )
 
 func (m Model) headerView() string {
