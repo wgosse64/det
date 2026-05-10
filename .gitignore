@@ -1,0 +1,15 @@
+# Compiled binary
+/det
+
+# Test binaries
+*.test
+
+# Coverage / profiling output
+*.out
+coverage.txt
+
+# Editor / OS / agent settings
+.DS_Store
+.idea/
+.vscode/
+.claude/
