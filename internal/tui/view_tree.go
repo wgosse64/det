@@ -16,7 +16,7 @@ const (
 	pctColWidth  = 5
 )
 
-func (m Model) treeView(rows int) string {
+func (m Model) treeView(rows, width int) string {
 	if len(m.visible) == 0 {
 		if m.scanning {
 			return dimStyle.Render("  scanning…")
@@ -36,7 +36,7 @@ func (m Model) treeView(rows int) string {
 
 	var b strings.Builder
 	for i := start; i < end; i++ {
-		b.WriteString(m.renderRow(m.visible[i], i == m.cursor))
+		b.WriteString(m.renderRow(m.visible[i], i == m.cursor, width))
 		if i < end-1 {
 			b.WriteByte('\n')
 		}
@@ -49,7 +49,7 @@ func (m Model) treeView(rows int) string {
 	return b.String()
 }
 
-func (m Model) renderRow(n *scan.Node, selected bool) string {
+func (m Model) renderRow(n *scan.Node, selected bool, width int) string {
 	pct := n.PercentOfParent()
 	color := HeatColor(pct)
 
@@ -74,7 +74,7 @@ func (m Model) renderRow(n *scan.Node, selected bool) string {
 	if selected {
 		// Selected row gets a uniform background; foreground stays the heat color.
 		plain := fmt.Sprintf("%s%s  %s  %s  %s", cursor, fmtsize.Bar(pct, barWidth), sizeStr, pctStr, name)
-		return cursorStyle.Foreground(color).Render(padRight(plain, m.width))
+		return cursorStyle.Foreground(color).Render(padRight(plain, width))
 	}
 
 	bar := lipgloss.NewStyle().Foreground(color).Render(fmtsize.Bar(pct, barWidth))

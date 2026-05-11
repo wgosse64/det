@@ -42,6 +42,9 @@ type Model struct {
 
 	devMode bool
 
+	themeIdx    int
+	showTreemap bool
+
 	confirm      *confirmState
 	status       string
 	statusExpiry time.Time
@@ -156,8 +159,64 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.startScan(msg.path)
 		return m, tea.Batch(m.spinner.Tick, m.waitForScan())
 
+	case tea.MouseMsg:
+		return m.handleMouse(msg)
+
 	case tea.KeyMsg:
 		return m.handleKey(msg)
+	}
+	return m, nil
+}
+
+func (m Model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	// Suspend mouse handling while a modal is up — keys handle it.
+	if m.help.ShowAll || m.confirm != nil {
+		return m, nil
+	}
+	l := m.layoutPanels()
+
+	switch msg.Button {
+	case tea.MouseButtonWheelUp:
+		if m.cursor > 0 {
+			m.cursor--
+			m.ensureCursorVisible()
+		}
+		return m, nil
+	case tea.MouseButtonWheelDown:
+		if m.cursor < len(m.visible)-1 {
+			m.cursor++
+			m.ensureCursorVisible()
+		}
+		return m, nil
+	case tea.MouseButtonLeft:
+		if msg.Action != tea.MouseActionPress {
+			return m, nil
+		}
+		// Click in main panel? Map screen-row → list index.
+		if msg.Y >= l.mainInnerTop && msg.Y <= l.mainInnerBottom &&
+			msg.X >= 1 && msg.X <= l.bodyW {
+			idx := m.scrollOffset + (msg.Y - l.mainInnerTop)
+			if idx >= 0 && idx < len(m.visible) {
+				m.cursor = idx
+				m.ensureCursorVisible()
+			}
+			return m, nil
+		}
+		// Click in treemap panel? Look up the cell owner.
+		if l.treemapShown &&
+			msg.Y >= l.treemapInnerTop && msg.Y <= l.treemapInnerBottom &&
+			msg.X >= 1 && msg.X <= l.bodyW {
+			tm := m.renderTreemap(l.treemapRows(), l.bodyW)
+			cellRow := msg.Y - l.treemapInnerTop
+			cellCol := msg.X - 1
+			if cellRow >= 0 && cellRow < tm.rows && cellCol >= 0 && cellCol < tm.cols {
+				if owner := tm.owners[cellRow*tm.cols+cellCol]; owner >= 0 && owner < len(m.visible) {
+					m.cursor = owner
+					m.ensureCursorVisible()
+				}
+			}
+			return m, nil
+		}
 	}
 	return m, nil
 }
@@ -252,6 +311,13 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case key.Matches(msg, m.keys.Visualizer):
 		m.visualizer = !m.visualizer
+	case key.Matches(msg, m.keys.Treemap):
+		m.showTreemap = !m.showTreemap
+		m.ensureCursorVisible()
+	case key.Matches(msg, m.keys.Theme):
+		themes := AllThemes()
+		m.themeIdx = (m.themeIdx + 1) % len(themes)
+		SetTheme(themes[m.themeIdx])
 	case key.Matches(msg, m.keys.Open):
 		if sel := m.selected(); sel != nil {
 			if err := action.Reveal(sel.Path); err != nil {
@@ -352,19 +418,72 @@ func (m *Model) ensureCursorVisible() {
 	}
 }
 
-// treeRows returns how many rows are available for the tree body. It accounts
-// for the actual rendered chrome height (header, status, possibly-wrapped
-// footer) so the tree always fits the screen.
-func (m Model) treeRows() int {
-	chrome := lineCount(m.headerView()) + lineCount(m.footerView())
+// panelLayout describes where each TUI panel sits on screen, in terminal
+// coordinates. *Inner* fields exclude the panel's border, so coordinate
+// arithmetic for hit-testing is direct.
+type panelLayout struct {
+	bodyW int // inner width shared by both panels (border eats one col on each side)
+
+	mainInnerTop    int // first inner row of the main panel (terminal-absolute)
+	mainInnerBottom int // last inner row of the main panel (inclusive)
+
+	treemapShown      bool
+	treemapInnerTop    int
+	treemapInnerBottom int
+}
+
+func (l panelLayout) mainRows() int    { return l.mainInnerBottom - l.mainInnerTop + 1 }
+func (l panelLayout) treemapRows() int { return l.treemapInnerBottom - l.treemapInnerTop + 1 }
+
+// layoutPanels computes panel positions from current model state. Pure: same
+// inputs always produce the same layout, so View() and the mouse handler can
+// both call it to stay in agreement.
+func (m Model) layoutPanels() panelLayout {
+	bodyW := m.width - 2
+	if bodyW < 1 {
+		bodyW = 1
+	}
+
+	chromeBefore := lineCount(m.headerView()) + 1 + 1 // header + scan band + blank sep
+	chromeAfter := lineCount(m.footerView())
 	if m.status != "" {
-		chrome++
+		chromeAfter++
 	}
-	r := m.height - chrome
-	if r < 1 {
-		r = 1
+	totalBody := m.height - chromeBefore - chromeAfter
+	if totalBody < 4 {
+		totalBody = 4
 	}
-	return r
+
+	l := panelLayout{bodyW: bodyW, treemapShown: m.showTreemap}
+	mainStart := chromeBefore // row index of main panel's TOP border
+
+	if m.showTreemap {
+		// Treemap panel ≈ half of main panel: 1/3 of total body for treemap.
+		treemapTotal := totalBody / 3
+		if treemapTotal < 5 {
+			treemapTotal = 5
+		}
+		if treemapTotal > totalBody-4 {
+			treemapTotal = totalBody - 4
+		}
+		mainTotal := totalBody - treemapTotal
+
+		l.mainInnerTop = mainStart + 1
+		l.mainInnerBottom = mainStart + mainTotal - 2
+
+		treemapStart := mainStart + mainTotal
+		l.treemapInnerTop = treemapStart + 1
+		l.treemapInnerBottom = treemapStart + treemapTotal - 2
+	} else {
+		l.mainInnerTop = mainStart + 1
+		l.mainInnerBottom = mainStart + totalBody - 2
+	}
+	return l
+}
+
+// treeRows preserved for callers that just need the row count.
+func (m Model) treeRows() int {
+	return m.layoutPanels().mainRows()
 }
 
 func lineCount(s string) int {
@@ -401,26 +520,40 @@ func (m Model) View() string {
 		return m.helpView()
 	}
 
-	var sections []string
-	sections = append(sections, m.headerView())
+	l := m.layoutPanels()
 
-	rows := m.treeRows()
-	var body string
+	var mainBody string
 	if m.visualizer {
-		body = m.blocksView(rows)
+		mainBody = m.blocksView(l.mainRows(), l.bodyW)
 	} else {
-		body = m.treeView(rows)
+		mainBody = m.treeView(l.mainRows(), l.bodyW)
 	}
-	sections = append(sections, body)
+	mainPanel := windowBorderStyle.
+		Width(l.bodyW).
+		Height(l.mainRows()).
+		Render(mainBody)
 
+	parts := []string{
+		m.headerView(),
+		m.scanBandLine(),
+		"",
+		mainPanel,
+	}
+	if l.treemapShown {
+		tm := m.renderTreemap(l.treemapRows(), l.bodyW)
+		treemapPanel := windowBorderStyle.
+			Width(l.bodyW).
+			Height(l.treemapRows()).
+			Render(tm.view)
+		parts = append(parts, treemapPanel)
+	}
 	if s := m.statusLine(); s != "" {
-		sections = append(sections, s)
+		parts = append(parts, s)
 	}
-	sections = append(sections, m.footerView())
+	parts = append(parts, m.footerView())
 
-	out := strings.Join(sections, "\n")
+	out := strings.Join(parts, "\n")
 	if m.confirm != nil {
-		// Overlay the confirmation centered.
 		return out + "\n" + m.confirmView()
 	}
 	return out

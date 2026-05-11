@@ -16,6 +16,8 @@ type keyMap struct {
 	Sort       key.Binding
 	Hidden     key.Binding
 	Visualizer key.Binding
+	Treemap    key.Binding
+	Theme      key.Binding
 	Help       key.Binding
 	Quit       key.Binding
 	ConfirmYes key.Binding
@@ -37,6 +39,8 @@ func defaultKeys() keyMap {
 		Sort:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
 		Hidden:     key.NewBinding(key.WithKeys("."), key.WithHelp(".", "hidden")),
 		Visualizer: key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "blocks")),
+		Treemap:    key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "treemap")),
+		Theme:      key.NewBinding(key.WithKeys("t"), key.WithHelp("t", "theme")),
 		Help:       key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 		Quit:       key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
 		ConfirmYes: key.NewBinding(key.WithKeys("y", "Y", "enter")),
@@ -45,7 +49,7 @@ func defaultKeys() keyMap {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.Enter, k.Back, k.Trash, k.Open, k.Yank, k.Visualizer, k.Help, k.Quit}
+	return []key.Binding{k.Up, k.Down, k.Enter, k.Back, k.Trash, k.Open, k.Yank, k.Visualizer, k.Treemap, k.Theme, k.Help, k.Quit}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -53,6 +57,6 @@ func (k keyMap) FullHelp() [][]key.Binding {
 		{k.Up, k.Down, k.Top, k.Bottom},
 		{k.Enter, k.Back, k.Trash, k.Open},
 		{k.Yank, k.Rescan, k.Sort, k.Hidden},
-		{k.Visualizer, k.Help, k.Quit},
+		{k.Visualizer, k.Treemap, k.Theme, k.Help, k.Quit},
 	}
 }

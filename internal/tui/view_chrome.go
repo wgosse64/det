@@ -38,32 +38,25 @@ func (m Model) headerView() string {
 	if m.devMode {
 		rows = append(rows, devTagStyle.Render("DEV — DELETIONS DISABLED"))
 	}
-	// Padded scan-status band: blank, status (possibly multi-line), blank.
-	rows = append(rows, "", m.scanStatusBlock(), "")
-
 	return strings.Join(rows, "\n")
 }
 
-// scanStatusBlock renders the live scanner status. While scanning it shows
-// the spinner + current path, wrapping the path across multiple lines when
-// it doesn't fit. After the scan completes it shows a quiet "scan complete".
-func (m Model) scanStatusBlock() string {
+// scanBandLine renders the live scanner status as a single fixed-height row.
+// During scan: spinner + truncated current path. After: a quiet completion
+// note. The path is truncated, never wrapped, so this row never pushes the
+// rest of the UI off-screen.
+func (m Model) scanBandLine() string {
 	if m.scanning {
-		const indent = "             " // aligns continuation lines under the path
 		spin := m.spinner.View()
-		avail := m.width - len(indent)
+		// " <spin> scanning " ≈ 12 chars of fixed prefix; leave a bit of
+		// breathing room on the right so trailing path doesn't kiss the edge.
+		const fixed = 14
+		avail := m.width - fixed
 		if avail < 10 {
 			avail = 10
 		}
-		lines := wrapText(m.progress.CurrentPath, avail)
-		if len(lines) == 0 {
-			lines = []string{""}
-		}
-		out := []string{dimStyle.Render(fmt.Sprintf(" %s scanning %s", spin, lines[0]))}
-		for _, l := range lines[1:] {
-			out = append(out, dimStyle.Render(indent+l))
-		}
-		return strings.Join(out, "\n")
+		path := truncatePath(m.progress.CurrentPath, avail)
+		return dimStyle.Render(fmt.Sprintf(" %s scanning %s", spin, path))
 	}
 	return statusStyle.Render(" ✓ scan complete")
 }
@@ -89,6 +82,8 @@ func shortHints() []hint {
 		{"o", "open"},
 		{"y", "yank"},
 		{"v", "blocks"},
+		{"m", "treemap"},
+		{"t", "theme"},
 		{".", "hidden"},
 		{"s", "sort"},
 		{"r", "rescan"},
@@ -108,7 +103,7 @@ func wrapHints(hints []hint, width int) string {
 		width = 80
 	}
 	const gap = 2
-	const preferredCols = 6
+	const preferredCols = 7
 	keyStyle := dimStyle.Bold(true)
 
 	// Uniform cell width so the grid columns line up vertically.

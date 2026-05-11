@@ -6,34 +6,45 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var (
-	helpTitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#ffffff")).
-			Background(lipgloss.Color("#5f5fd7")).
-			Bold(true).
-			Padding(0, 2)
+// Help styles read from the active theme on every call so theme changes are
+// picked up immediately on the next render.
+func helpTitleStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(currentTheme.HelpTitleFg).
+		Background(currentTheme.HelpTitleBg).
+		Bold(true).
+		Padding(0, 2)
+}
 
-	helpSectionStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#dcdcaa")).
-				Bold(true).
-				Underline(true).
-				MarginTop(1)
+func helpSectionStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(currentTheme.HelpSectionFg).
+		Bold(true).
+		Underline(true).
+		MarginTop(1)
+}
 
-	helpKeyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9cdcfe")).
-			Bold(true)
+func helpKeyStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(currentTheme.HelpKeyFg).
+		Bold(true)
+}
 
-	helpDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#d4d4d4"))
+func helpDescStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(currentTheme.FileFg)
+}
 
-	helpDimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7f848e")).
-			Italic(true)
+func helpDimStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(currentTheme.DimFg).
+		Italic(true)
+}
 
-	helpFooterStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7f848e")).
-			MarginTop(1)
-)
+func helpFooterStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(currentTheme.DimFg).
+		MarginTop(1)
+}
 
 type helpEntry struct {
 	keys, desc string
@@ -71,10 +82,14 @@ var helpSections = []helpSection{
 		entries: []helpEntry{
 			{"v", "Toggle the block visualizer",
 				"Replaces the tree with a colored block grid where each child's area is proportional to its share of the directory."},
+			{"m", "Toggle the treemap panel",
+				"Opens a second, smaller panel below the navigator showing a squarified treemap of the current directory's children. Click a tile to select it."},
 			{"s", "Cycle the sort order",
 				"size (largest first) → name (alphabetical) → mtime (most recently modified first)."},
 			{".", "Toggle visibility of dotfiles / hidden directories",
 				"They are always counted toward sizes; this only hides them from the row list."},
+			{"t", "Cycle the color theme",
+				"Currently: default (cool→hot heatmap) and dec-amber (vintage DEC amber CRT, with an orange→yellow→white gradient on the size bars)."},
 		},
 	},
 	{
@@ -92,8 +107,8 @@ func (m Model) helpView() string {
 		width = 20
 	}
 
-	title := helpTitleStyle.Render("Disk Exploration Tool — Help")
-	subtitle := helpDimStyle.Render("A WinDirStat-style disk explorer for terminal disk cleanup.")
+	title := helpTitleStyle().Render("Disk Exploration Tool — Help")
+	subtitle := helpDimStyle().Render("A WinDirStat-style disk explorer for terminal disk cleanup.")
 	if m.devMode {
 		subtitle += "  " + devTagStyle.Render("DEV — DELETIONS DISABLED")
 	}
@@ -111,25 +126,25 @@ func (m Model) helpView() string {
 
 	for _, section := range helpSections {
 		b.WriteByte('\n')
-		b.WriteString(helpSectionStyle.Render(section.title))
+		b.WriteString(helpSectionStyle().Render(section.title))
 		b.WriteByte('\n')
 		for _, e := range section.entries {
-			keyCell := helpKeyStyle.Render(padPlain(e.keys, keyColW))
-			line := "  " + keyCell + "  " + helpDescStyle.Render(e.desc)
+			keyCell := helpKeyStyle().Render(padPlain(e.keys, keyColW))
+			line := "  " + keyCell + "  " + helpDescStyle().Render(e.desc)
 			b.WriteString(line)
 			b.WriteByte('\n')
 			if e.long != "" {
 				wrapped := wrapText(e.long, width-keyColW-6)
 				for _, ln := range wrapped {
 					b.WriteString(strings.Repeat(" ", keyColW+4))
-					b.WriteString(helpDimStyle.Render(ln))
+					b.WriteString(helpDimStyle().Render(ln))
 					b.WriteByte('\n')
 				}
 			}
 		}
 	}
 
-	b.WriteString(helpFooterStyle.Render("Press ? or Esc to close   ·   q to quit"))
+	b.WriteString(helpFooterStyle().Render("Press ? or Esc to close   ·   q to quit"))
 
 	out := b.String()
 	// Pad to full screen height.

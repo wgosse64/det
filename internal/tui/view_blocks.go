@@ -11,8 +11,8 @@ import (
 // blocksView renders the children of m.current as a row-major grid of colored
 // unicode blocks. Each child gets a number of cells proportional to its size;
 // every cell is colored by the child's percent-of-parent.
-func (m Model) blocksView(rows int) string {
-	if rows <= 1 || m.width <= 4 {
+func (m Model) blocksView(rows, width int) string {
+	if rows <= 1 || width <= 4 {
 		return dimStyle.Render("(too small)")
 	}
 	if m.current == nil || len(m.visible) == 0 {
@@ -27,7 +27,7 @@ func (m Model) blocksView(rows int) string {
 	if gridRows < 1 {
 		gridRows = 1
 	}
-	gridCols := m.width
+	gridCols := width
 	totalCells := gridRows * gridCols
 
 	parentSize := m.current.Size

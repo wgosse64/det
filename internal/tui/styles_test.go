@@ -33,3 +33,27 @@ func TestHeatColorClampsNegative(t *testing.T) {
 		t.Errorf("negative should clamp to first stop, got %s", got)
 	}
 }
+
+func TestAllThemesIncludesDefaultAndAmber(t *testing.T) {
+	names := map[string]bool{}
+	for _, th := range AllThemes() {
+		names[th.Name] = true
+	}
+	if !names["default"] || !names["dec-amber"] {
+		t.Errorf("AllThemes missing required entries: %v", names)
+	}
+}
+
+func TestSetThemeSwitchesGradient(t *testing.T) {
+	t.Cleanup(func() { SetTheme(DefaultTheme()) })
+	SetTheme(DECAmberTheme())
+	if got := string(HeatColor(0)); got != "#ff8c00" {
+		t.Errorf("DEC theme low end should be orange #ff8c00, got %s", got)
+	}
+	if got := string(HeatColor(1)); got != "#ffffff" {
+		t.Errorf("DEC theme high end should be white #ffffff, got %s", got)
+	}
+	if got := string(HeatColor(0.5)); got != "#ffd700" {
+		t.Errorf("DEC theme midpoint should be yellow #ffd700, got %s", got)
+	}
+}
