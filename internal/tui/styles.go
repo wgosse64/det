@@ -54,6 +54,10 @@ type Theme struct {
 	HelpSectionFg lipgloss.Color
 	HelpKeyFg     lipgloss.Color
 
+	// Treemap selection accent. Used as the foreground fill color of the
+	// currently-selected box; chosen to contrast with every heat stop.
+	TreemapSelectionFg lipgloss.Color
+
 	// Color gradient used for size bars and the block visualizer.
 	HeatStops []HeatStop
 }
@@ -175,10 +179,11 @@ func DefaultTheme() Theme {
 		ErrorFg:       lipgloss.Color("#f44747"),
 		StatusFg:      lipgloss.Color("#b5cea8"),
 		ConfirmFg:     lipgloss.Color("#f44747"),
-		HelpTitleFg:   lipgloss.Color("#ffffff"),
-		HelpTitleBg:   lipgloss.Color("#5f5fd7"),
-		HelpSectionFg: lipgloss.Color("#dcdcaa"),
-		HelpKeyFg:     lipgloss.Color("#9cdcfe"),
+		HelpTitleFg:        lipgloss.Color("#ffffff"),
+		HelpTitleBg:        lipgloss.Color("#5f5fd7"),
+		HelpSectionFg:      lipgloss.Color("#dcdcaa"),
+		HelpKeyFg:          lipgloss.Color("#9cdcfe"),
+		TreemapSelectionFg: lipgloss.Color("#5fafff"), // sky blue — outside the heat gradient
 		HeatStops: []HeatStop{
 			{0.0, 0x4e, 0xc9, 0xb0},
 			{0.10, 0xdc, 0xdc, 0xaa},
@@ -218,10 +223,11 @@ func DECAmberTheme() Theme {
 		ErrorFg:       danger,
 		StatusFg:      yellow,
 		ConfirmFg:     yellow,
-		HelpTitleFg:   ink,
-		HelpTitleBg:   amber,
-		HelpSectionFg: yellow,
-		HelpKeyFg:     paleAmber,
+		HelpTitleFg:        ink,
+		HelpTitleBg:        amber,
+		HelpSectionFg:      yellow,
+		HelpKeyFg:          paleAmber,
+		TreemapSelectionFg: lipgloss.Color("#5fffaf"), // bright mint — sits well outside the orange→yellow→white gradient
 		HeatStops: []HeatStop{
 			{0.0, 0xff, 0x8c, 0x00}, // orange
 			{0.5, 0xff, 0xd7, 0x00}, // yellow

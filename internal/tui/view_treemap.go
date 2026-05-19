@@ -74,16 +74,18 @@ func (m Model) renderTreemap(rows, width int) treemapResult {
 			innerH--
 		}
 
-		// Selected fill uses a different shade so it pops against neighbors.
-		fillChar := '█'
+		// Selected box uses a contrasting accent foreground; everything else
+		// uses its heat color. Fill character stays `█` for both so the
+		// transition reads as a color shift, not a texture change.
+		fillColor := heat
 		if isSel {
-			fillChar = '▒'
+			fillColor = currentTheme.TreemapSelectionFg
 		}
 
-		// 1) Fill inner area with the heat color.
+		// 1) Fill inner area with the chosen color.
 		for y := rc.y; y < rc.y+innerH && y < rows; y++ {
 			for x := rc.x; x < rc.x+innerW && x < width; x++ {
-				grid[y][x] = tmCell{ch: fillChar, fg: heat}
+				grid[y][x] = tmCell{ch: '█', fg: fillColor}
 				owners[y*width+x] = idx
 			}
 		}
@@ -115,12 +117,11 @@ func (m Model) renderTreemap(rows, width int) treemapResult {
 			}
 		}
 
-		// 3) Labels for boxes that have room. We try a name + size on two
-		// lines first, then just the name, then truncated name.
-		if innerW >= 4 && innerH >= 1 {
-			drawTreemapLabel(grid, rc, innerW, innerH, n.Name+suffixForDir(n.IsDir),
-				fmtsize.Bytes(n.Size), heat, isSel, width)
-		}
+		// 3) Labels — only on boxes large enough to show meaningful text
+		// without aggressive clipping. drawTreemapLabel applies its own
+		// minimum-size check and skips silently if the rect is too tight.
+		drawTreemapLabel(grid, rc, innerW, innerH, n.Name+suffixForDir(n.IsDir),
+			fmtsize.Bytes(n.Size), fillColor, isSel, width)
 	}
 
 	var b strings.Builder
@@ -157,28 +158,38 @@ func suffixForDir(isDir bool) string {
 	return ""
 }
 
+// minLabelInnerW is the floor for showing any text. Boxes narrower than this
+// would only fit a heavily-truncated name (~3 visible chars + ellipsis) which
+// reads as visual noise rather than a label, so we skip them entirely.
+const minLabelInnerW = 8
+
 // drawTreemapLabel writes name (and optionally size) into a rectangle's inner
-// area, choosing top-left origin for tight rects and centered for roomier ones.
-// Text uses a high-contrast fg and a heat-color bg so it remains legible.
+// area, but only if the box is large enough that the label won't be clipped
+// to uselessness. Label background is the rect's actual fill color so the
+// selection accent stays consistent across the whole rectangle.
 func drawTreemapLabel(grid [][]tmCell, rc tmRect, innerW, innerH int,
-	name, size string, heat lipgloss.Color, selected bool, gridW int) {
+	name, size string, fillColor lipgloss.Color, selected bool, gridW int) {
 
-	labelFg := contrastingFg(heat)
+	if innerW < minLabelInnerW || innerH < 1 {
+		return
+	}
 
-	// What can we fit?
+	labelFg := contrastingFg(fillColor)
+
 	primary := name
 	if len(primary) > innerW {
 		primary = truncateMiddle(primary, innerW)
 	}
 	primaryX := rc.x + (innerW-len(primary))/2
 	primaryY := rc.y
-	writeRow(grid, primaryY, primaryX, primary, labelFg, heat, selected, gridW)
+	writeRow(grid, primaryY, primaryX, primary, labelFg, fillColor, selected, gridW)
 
-	// Add the size on a second row if there's vertical room.
+	// Add the size on a second row if there's vertical room AND the size
+	// string fits without truncation. Truncated sizes are useless.
 	if innerH >= 2 && len(size) <= innerW {
 		secondaryX := rc.x + (innerW-len(size))/2
 		secondaryY := rc.y + 1
-		writeRow(grid, secondaryY, secondaryX, size, labelFg, heat, selected, gridW)
+		writeRow(grid, secondaryY, secondaryX, size, labelFg, fillColor, selected, gridW)
 	}
 }
 
